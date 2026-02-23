@@ -7,7 +7,8 @@
     "dev": "nodemon server/src/index.js",
     "start": "npm run build:client && node server/src/index.js",
     "build:client": "npm run build --prefix client",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "npm run dev --prefix client"
   },
   "keywords": [],
   "author": "",

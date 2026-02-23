@@ -130,7 +130,6 @@ function App() {
         <div>
           <p className="subtitle">Appointments</p>
         </div>
-        {message && <div className="pill">API: {message}</div>}
       </div>
 
       <main className="container">
