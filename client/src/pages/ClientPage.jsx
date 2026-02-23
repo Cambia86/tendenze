@@ -9,6 +9,7 @@ export default function ClientPage() {
   const [form, setForm] = useState(EMPTY);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [isNew, setIsNew] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -34,40 +35,77 @@ export default function ClientPage() {
         numeroDiTelefono: selected.numeroDiTelefono ?? "",
         email: selected.email ?? "",
       });
-    } else {
+      setIsNew(false);
+    } else if (!isNew) {
       setForm(EMPTY);
     }
-  }, [selected]);
+  }, [selected, isNew]);
 
-  const handleSelect = (c) => setSelected(c);
+  const handleSelect = (c) => {
+    setSelected(c);
+    setIsNew(false);
+  };
+
+  const handleNewClient = () => {
+    setIsNew(true);
+    setSelected(null);
+    setForm(EMPTY);
+  };
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (!selected) return;
     setError("");
     setIsSaving(true);
-    fetch(`/api/clients/${selected.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    })
+    const request = isNew
+      ? fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        })
+      : fetch(`/api/clients/${selected.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+
+    request
       .then(async (res) => {
         const data = await res.json().catch(() => null);
         if (!res.ok) throw new Error(data?.error || "Request failed");
         return data;
       })
-      .then((updated) => {
-        setClients((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-        setSelected(updated);
+      .then((saved) => {
+        if (isNew) {
+          setClients((prev) => [...prev, saved]);
+          setSelected(saved);
+          setIsNew(false);
+        } else {
+          setClients((prev) => prev.map((c) => (c.id === saved.id ? saved : c)));
+          setSelected(saved);
+        }
       })
-      .catch((err) => setError(err?.message || "Failed to update"))
+      .catch((err) => setError(err?.message || (isNew ? "Failed to create client" : "Failed to update")))
       .finally(() => setIsSaving(false));
   };
 
   return (
-    <div className="clientPage">
+    <>
+      {isSaving && (
+        <div className="screenLoader">
+          <div className="screenLoaderInner">
+            <div className="screenLoaderSpinner" />
+            <span>Salvataggio cliente in corso...</span>
+          </div>
+        </div>
+      )}
+      <div className="clientPage">
       <div className="clientList">
-        <h2 className="sectionTitle">Clienti</h2>
+        <div className="clientListHeader">
+          <h2 className="sectionTitle">Clienti</h2>
+          <button type="button" className="clientNewButton" onClick={handleNewClient}>
+            + Nuovo
+          </button>
+        </div>
         {clients.length === 0 ? (
           <p className="emptyMsg">Nessun cliente</p>
         ) : (
@@ -89,9 +127,9 @@ export default function ClientPage() {
 
       <div className="clientDetail">
         {error && <div className="alert">{error}</div>}
-        {selected ? (
+        {isNew || selected ? (
           <form onSubmit={handleSave} className="clientForm">
-            <h2 className="sectionTitle">Modifica cliente</h2>
+            <h2 className="sectionTitle">{isNew ? "Nuovo cliente" : "Modifica cliente"}</h2>
             <div className="formField">
               <label htmlFor="nome">Nome</label>
               <input
@@ -143,13 +181,14 @@ export default function ClientPage() {
               />
             </div>
             <button type="submit" className="button" disabled={isSaving}>
-              {isSaving ? "Salvataggio..." : "Salva modifiche"}
+              {isSaving ? "Salvataggio..." : isNew ? "Crea cliente" : "Salva modifiche"}
             </button>
           </form>
         ) : (
           <p className="emptyMsg">Seleziona un cliente per modificarlo</p>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
