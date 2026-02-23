@@ -3,7 +3,7 @@ import "./Header.css";
 export default function Header({ currentPage, onPageChange }) {
   return (
     <header className="appHeader">
-      <h1 className="appTitle">HairStylist Management</h1>
+      <h1 className="appTitle">Tendenze</h1>
       <nav className="navTabs">
         <button
           type="button"
